@@ -1,14 +1,18 @@
 package main
 
 import (
+	"bufio"
+	"encoding/json"
 	"fmt"
+	"log"
+	"os"
+
 	"github.com/gocolly/colly"
 )
 
-// Concert struct for each concert
 type Concert struct {
-	Name string
-	Date string
+	Name string `json:"name"`
+	Date string `json:"date"`
 }
 
 func main() {
@@ -18,29 +22,12 @@ func main() {
 	// Slice to store concerts
 	var concerts []Concert
 
-	// // On every div element which has the specified class for concert name, call callback for concert name
-	// c.OnHTML("div.elementor-loop-container.elementor-grid div.elementor-widget-theme-post-title a", func(e *colly.HTMLElement) {
-	// 	concert := Concert{
-	// 		Name: e.Text,
-	// 	}
-	// 	concerts = append(concerts, concert)
-	// })
-
-	// // On every div element which has the specified class for concert date, call callback for concert date
-	// c.OnHTML("div.elementor-loop-container.elementor-grid div.elementor-widget-shortcode > div > div > div", func(e *colly.HTMLElement) {
-	// 	concert := Concert{
-	// 		Date: e.Text,
-	// 	}
-	// 	concerts = append(concerts, concert)
-	// })
-
 	c.OnHTML("div.elementor-loop-container.elementor-grid", func(e *colly.HTMLElement) {
 		name := e.ChildText("div.elementor-widget-theme-post-title a")
 		date := e.ChildText("div.elementor-widget-shortcode > div > div > div")
-		concert := Concert{
-			Name: name,
-			Date: date,
-		}
+		// create a new concert struct
+		concert := Concert{name, date}
+		// append the concert struct to the slice
 		concerts = append(concerts, concert)
 	})
 
@@ -49,13 +36,32 @@ func main() {
 		fmt.Println("Visiting", r.URL.String())
 	})
 
+	// After scraping is complete
+	c.OnScraped(func(r *colly.Response) {
+		// turn the slice into a JSON string
+		concertsJson, err := json.Marshal(concerts)
+		if err != nil {
+			log.Fatalf("Failed to convert to JSON: %v", err)
+		}
+		// create file
+		file, err := os.Create("concerts.json")
+		if err != nil {
+			log.Fatalf("Failed to create file: %v", err)
+		}
+		defer file.Close()
+
+		// add json to the file
+		writer := bufio.NewWriter(file)
+		_, err = writer.WriteString(string(concertsJson))
+		if err != nil {
+			log.Fatalf("Failed to write json to file: %v", err)
+		}
+		// flush the buffer to ensure data is written to the file
+		writer.Flush()
+
+		fmt.Println("Data written to concerts.json successfully.")
+	})
+
 	// Start scraping on https://thepalomino.ca/live-events/
 	c.Visit("https://thepalomino.ca/live-events/")
-
-	// Print the scraped data
-	for _, concert := range concerts {
-		fmt.Printf("Concert Name: %s\n", concert.Name)
-		fmt.Printf("Concert Date: %s\n", concert.Date)
-		fmt.Println("------------")
-	}
 }
