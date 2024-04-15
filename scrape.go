@@ -13,6 +13,7 @@ import (
 type Concert struct {
 	Name string `json:"concert"`
 	Date string `json:"date"`
+	Link string `json:"link"`
 }
 
 func main() {
@@ -24,8 +25,9 @@ func main() {
 	c.OnHTML(".e-loop-item", func(e *colly.HTMLElement) {
 		name := e.ChildText(".elementor-heading-title")
 		date := e.ChildText(".event-date")
+		link := e.ChildAttr("a", "href")
 		// create a new concert struct
-		concert := Concert{name, date}
+		concert := Concert{name, date, link}
 		// append the concert struct to the slice
 		concerts = append(concerts, concert)
 	})
