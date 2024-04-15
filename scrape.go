@@ -11,7 +11,7 @@ import (
 )
 
 type Concert struct {
-	Name string `json:"name"`
+	Name string `json:"concert"`
 	Date string `json:"date"`
 }
 
@@ -19,12 +19,11 @@ func main() {
 	// Instantiate default collector
 	c := colly.NewCollector()
 
-	// Slice to store concerts
-	var concerts []Concert
+	concerts := []Concert{}
 
-	c.OnHTML("div.elementor-loop-container.elementor-grid", func(e *colly.HTMLElement) {
-		name := e.ChildText("div.elementor-widget-theme-post-title a")
-		date := e.ChildText("div.elementor-widget-shortcode > div > div > div")
+	c.OnHTML(".e-loop-item", func(e *colly.HTMLElement) {
+		name := e.ChildText(".elementor-heading-title")
+		date := e.ChildText(".event-date")
 		// create a new concert struct
 		concert := Concert{name, date}
 		// append the concert struct to the slice
@@ -44,7 +43,7 @@ func main() {
 			log.Fatalf("Failed to convert to JSON: %v", err)
 		}
 		// create file
-		file, err := os.Create("concerts.json")
+		file, err := os.Create("output.json")
 		if err != nil {
 			log.Fatalf("Failed to create file: %v", err)
 		}
@@ -59,7 +58,7 @@ func main() {
 		// flush the buffer to ensure data is written to the file
 		writer.Flush()
 
-		fmt.Println("Data written to concerts.json successfully.")
+		fmt.Println("Data written to output.json successfully.")
 	})
 
 	// Start scraping on https://thepalomino.ca/live-events/
